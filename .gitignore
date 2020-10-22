@@ -1,1 +1,7 @@
 data
+.vscode/
+__pycache__
+
+# this dir containes all text outputs
+output
+!output/keep
