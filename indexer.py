@@ -134,7 +134,11 @@ def generate_term_docID_pairs(docs: List[str]) -> Tuple[str, int]:
     return pairs
 
 
-def create_inverted_index(pairs: List[Tuple[str,]]):
+def generate_inverted_index(pairs: List[Tuple[str, ]]):
+    '''
+    Given pairs of term_docIDs (which are unsorted and can contain
+    duplicates), generate the inverted_index.
+    '''
 
     print('Generating the inverted index')
 
@@ -165,38 +169,30 @@ def sorted_postings(inverted_index: Dict[str, Tuple[int, set]]) -> Dict[str, Tup
     return sorted_index
 
 
-def run() -> None:
-    # def run(indir: str, outfile) -> None:
-    args = init_params()
-    indir = args.input_file
-    outfile = f'output/{args.output_file}' if type(args.output_file) == str else args.output_file
-    lines: list = unpack_corpus_step1(indir)
-    utils.write2disk(lines, outfile)
-
-
-def shaninigans(docs) -> None:
-    print(f'documents length {len(docs)}')
-    for i in range(5):
-        print('\n\n' + '++++++++++'*5 + ' NORMAL DOC:')
-        print()
-        print(docs[-i])
-        print()
-        print('='*20)
-        print()
-        print('++++++++++'*5 + ' EXTRACTED NORMAL DOC:')
-        print(clean_reccuring_patterns(remove_tags(extract_text_contents(docs[-i]))))
-        print()
-
-
-def run_one_shot():
-    args = init_params()
-    indir = args.input_file
+def from_scratch_index_creation(input_dir=None) -> Dict[str, Tuple[int, set]]:
+    '''
+    Created the inverted index from scratch, i.e from the corpus file
+    collection to the dict struct.
+    '''
+    indir = input_dir if input_dir != None else init_params().input_file
     lines: List[str] = unpack_corpus_step1(indir)
     docs: List[str] = document_extracter(lines)
     pairs: Tuple[str, int] = generate_term_docID_pairs(docs)
-    inverted_index: Dict[str, Tuple[int, set]] = sorted_postings(create_inverted_index(pairs))
-    printable = sorted(inverted_index.items(), key=lambda token: token[0])
-    utils.write2disk(printable, args.output_file)
+    inverted_index: Dict[str, Tuple[int, List[int]]] = sorted_postings(generate_inverted_index(pairs))
+    return inverted_index
+
+
+def save_index_to_disk(inverted_index: Dict[str, Tuple[int, set]], outfile=None) -> None:
+    printable: Tuple[str, Tuple[int, List[int]]] = sorted(inverted_index.items(), key=lambda token: token[0])
+    output_file = outfile if outfile != None else init_params().output_file
+    utils.write2disk(printable, output_file)
+
+
+def run_one_shot():
+    '''Runs the creation of the index and stores it to disk.'''
+
+    inverted_index: Dict[str, Tuple[int, set]] = from_scratch_index_creation()
+    save_index_to_disk(inverted_index)
 
 
 if __name__ == "__main__":
