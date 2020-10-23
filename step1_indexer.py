@@ -1,12 +1,11 @@
 '''
-This block will convert the corpus into a list of term-docID pairs. This 
+This block will convert the corpus into an inverted index and write the output into any file passed as argument to the script with -o | --output_file
 '''
 
 import argparse
 import os
-from os import remove, removexattr
 import sys
-from typing import List, Tuple
+from typing import Iterable, List, Tuple, Dict, Set
 import utils
 import nltk
 from tqdm import tqdm
@@ -40,6 +39,8 @@ def document_extracter(lines: List[str]):
     func. It is a design decision to include only the contents of the text tags
     for the construction of the index.
     '''
+
+    print("Extracting documents from .sgm file contents")
     docs: List[str] = []
     for line in tqdm(lines):
         still_looking = True
@@ -55,7 +56,8 @@ def document_extracter(lines: List[str]):
 
                 document: str = line[start_idx:end_idx]
 
-                docs.append(document)
+                clean_doc = clean_reccuring_patterns(remove_tags(extract_text_contents(document)))
+                docs.append(clean_doc)
 
                 start_idx = end_idx
                 end_idx = start_idx + 1
@@ -66,7 +68,7 @@ def document_extracter(lines: List[str]):
     return docs
 
 
-def extract_text_tag_contents(doc: str) -> List[str]:
+def extract_text_contents(doc: str) -> List[str]:
     return doc[doc.find('<TEXT'):doc.find('</TEXT>')+len('</TEXT>')]
 
 
@@ -79,12 +81,10 @@ def remove_tags(doc: str) -> str:
     doc_content = doc
     tag_start = doc_content.find('<')
 
-    while tag_start >= 0 :  # implies the substring exists
+    while tag_start >= 0:  # implies the substring exists
 
         tag_end: int = doc_content.find('>', tag_start)
         tag_type: str = doc_content[tag_start+1:tag_end]
-
-        # print(f'TAG TYPE: ->>>>>>{tag_type}')
 
         if tag_type != '/TEXT':
             '''
@@ -104,18 +104,65 @@ def remove_tags(doc: str) -> str:
     return doc_content
 
 
-def generate_pairs(docs: List[str]) -> Tuple[str, int]:
+def clean_reccuring_patterns(doc: str) -> str:
+    '''
+    ['&#2;', '&#3;'] are two patterns that occur very often at the begining and
+    end of documents respectively. Filter them out of documents before create
+    the term-docID pairs reduces the number of pairs from 4.5M to 3M pairs and
+    from 17 to 12 seconds of processing.
+    '''
+    for pattern in ['&#2;', '&#3;']:
+        start = doc.find(pattern)
+        end = start + len(pattern) + 1
+        doc = doc[:start] + ' ' + doc[end:]
+
+    return doc
+
+
+def generate_term_docID_pairs(docs: List[str]) -> Tuple[str, int]:
     '''Generate term-docID tuples'''
+
+    print('Generating term-docID pairs')
     pairs = []
     tokenizer = nltk.RegexpTokenizer(r'\w+')
-    
+
     for id in tqdm(range(len(docs))):
         tokenized = tokenizer.tokenize(docs[id])
         for token in tokenized:
-            pairs.append((token, id))
+            pairs.append((token, id+1))
 
     return pairs
 
+
+def create_inverted_index(pairs: List[Tuple[str,]]):
+
+    print('Generating the inverted index')
+
+    inverted_index: Dict[Tuple[int, set]] = {}
+
+    for token, docId in tqdm(pairs):
+        _, postings_list = inverted_index.get(token, (0, set()))
+        postings_list.add(docId)
+
+        frequency: int = len(postings_list)
+        inverted_index[token] = (frequency, postings_list)
+        # it's a set, we can't blindly increment because there are potential
+        # duplicates in the pairs.
+
+    return inverted_index
+
+
+def sorted_postings(inverted_index: Dict[str, Tuple[int, set]]) -> Dict[str, Tuple[int, List[int]]]:
+    '''Sorts postings lists for each term'''
+    sorted_index: Dict[str, Tuple[int, List[int]]] = {}
+
+    for token in inverted_index:
+        postings_set: set = inverted_index[token][1]
+        sorted_postings: list = sorted(list(postings_set))
+        frequencies = inverted_index[token][0]
+        sorted_index[token] = (frequencies, sorted_postings)
+
+    return sorted_index
 
 
 def run() -> None:
@@ -127,13 +174,7 @@ def run() -> None:
     utils.write2disk(lines, outfile)
 
 
-def run_one_shot():
-    args = init_params()
-    indir = args.input_file
-    lines = unpack_corpus_step1(indir)
-    # docs: List[str] = segment_docs(lines)
-    docs = document_extracter(lines)
-
+def shaninigans(docs) -> None:
     print(f'documents length {len(docs)}')
     for i in range(5):
         print('\n\n' + '++++++++++'*5 + ' NORMAL DOC:')
@@ -143,31 +184,19 @@ def run_one_shot():
         print('='*20)
         print()
         print('++++++++++'*5 + ' EXTRACTED NORMAL DOC:')
-        print(remove_tags(extract_text_tag_contents(docs[-i])))
+        print(clean_reccuring_patterns(remove_tags(extract_text_contents(docs[-i]))))
         print()
-    exit()
 
-    spec_trimmed = trimdocs(special[:10])
-    timeed = trimdocs(docs[:10])
-    exit()
-    for i in range(3):
-        print(docs[i])
-        print('\n\n')
-    exit()
-    print(f'documents length {len(docs)}')
-    print(f'special docs length {len(special)}')
-    # for i in range(5):
-    #     print(special[i])
-    count = 0
-    for i in tqdm(range(len(special))):
-        if special[i].find('<TITLE') < 0 or special[i].find('</TITLE>') < 0:
-            print(special[i])
-            print(f'\n************ DOC {i} has no title tag\n\n')
-            count += 1
-    print(f'\n{count} docs do not have a title tag out of {len(special)}')
-    exit()
-    pairs: Tuple[str, int] = generate_pairs(docs)
-    # cleaned: Tuple[str, int] = clean_punctuation(pairs)
+
+def run_one_shot():
+    args = init_params()
+    indir = args.input_file
+    lines: List[str] = unpack_corpus_step1(indir)
+    docs: List[str] = document_extracter(lines)
+    pairs: Tuple[str, int] = generate_term_docID_pairs(docs)
+    inverted_index: Dict[str, Tuple[int, set]] = sorted_postings(create_inverted_index(pairs))
+    printable = sorted(inverted_index.items(), key=lambda token: token[0])
+    utils.write2disk(printable, args.output_file)
 
 
 if __name__ == "__main__":

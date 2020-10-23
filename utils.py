@@ -4,6 +4,8 @@ import argparse
 import json
 import sys
 import os
+from typing import Iterable
+from tqdm import tqdm
 
 
 def common_params():
@@ -21,13 +23,14 @@ def common_params():
     return common_params.args
 
 
-def write2disk(lines: list, outfile) -> bool:
+def write2disk(lines: Iterable, outfile) -> bool:
     '''This is a general utility for writing intermediate and final computations into output files'''
+    print(f'Writing output into file {outfile}')
     if type(outfile) == str:
         with open(outfile, mode='w', encoding='UTF-8') as f:
-            for l in lines:
+            for l in tqdm(lines):
                 print(json.dumps(l), file=f)
 
     else: # output must be sys.stdout (so it's already a file obj)
-        for l in lines:
+        for l in tqdm(lines):
             print(json.dumps(l), file=outfile)
