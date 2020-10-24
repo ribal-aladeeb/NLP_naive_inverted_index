@@ -124,11 +124,17 @@ def generate_term_docID_pairs(docs: List[str]) -> Tuple[str, int]:
 
     print('Generating term-docID pairs')
     pairs = []
-    tokenizer = nltk.RegexpTokenizer(r'\w+')
+    # tokenizer = nltk.RegexpTokenizer(r"\b(\w[-']\w)\b+|\b\w[']\b|\b\w\b")
+    # tokenizer = nltk.RegexpTokenizer(r"(?:\w|['-]\w|\w['])+")
+    tokenizer = nltk.RegexpTokenizer(r"[a-zA-Z]+[-']{0,1}[a-zA-Z]*[']{0,1}")
 
     for id in tqdm(range(len(docs))):
         tokenized = tokenizer.tokenize(docs[id])
         for token in tokenized:
+            if token == "":
+                continue
+            while token[-1] == "-" or token[-1] =="'":
+                token = token[:-1]
             pairs.append((token, id+1))
 
     return pairs
@@ -195,6 +201,8 @@ def run_one_shot():
     inverted_index: Dict[str, Tuple[int, set]] = from_scratch_index_creation()
     save_index_to_disk(inverted_index)
 
+# def run_intermediate_steps():
+#     utils.ensure_dir_exists('output')
 
 if __name__ == "__main__":
     run_one_shot()
