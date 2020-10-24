@@ -23,9 +23,14 @@ def common_params():
     return common_params.args
 
 
-def write2disk(lines: Iterable, outfile) -> bool:
-    '''This is a general utility for writing intermediate and final computations into output files'''
+def write2disk(lines: Iterable, outfile) -> None:
+    '''
+    This is a general utility for writing intermediate and final computations
+    into output files. The <lines> argument needs to be iterable.
+    '''
+
     print(f'Writing output into file {outfile}')
+    
     if type(outfile) == str:
         with open(outfile, mode='w', encoding='UTF-8') as f:
             for l in tqdm(lines):
@@ -34,3 +39,27 @@ def write2disk(lines: Iterable, outfile) -> bool:
     else: # output must be sys.stdout (so it's already a file obj)
         for l in tqdm(lines):
             print(json.dumps(l), file=outfile)
+
+
+def write_json_obj_2_disk(obj: dict, outfile):
+    '''Writes obj dict representing a json obj to oufile.'''
+    if type(outfile) == str:
+        with open(outfile, mode='w', encoding='UTF-8') as f:
+            json.dump(obj, f)
+
+    else: # output must be sys.stdout (so it's already a file obj)
+        json.dump(obj,outfile)
+
+
+def load_json_from_disk(infile):
+    '''Reads json obj from infile.'''
+
+    if type(infile) == str:
+        with open(infile, mode='r', encoding='UTF-8') as f:
+            obj = json.loads(f)
+
+    else: # infile must be a file obj
+        obj = json.loads(infile)
+    
+    return obj
+    
