@@ -41,14 +41,14 @@ def write2disk(lines: Iterable, outfile) -> None:
             print(json.dumps(l), file=outfile)
 
 
-def write_json_obj_2_disk(obj: dict, outfile):
+def write_json_obj_2_disk(obj: dict, outfile, indentation=None):
     '''Writes obj dict representing a json obj to oufile.'''
     if type(outfile) == str:
         with open(outfile, mode='w', encoding='UTF-8') as f:
-            json.dump(obj, f)
+            json.dump(obj, f, indent=indentation)
 
     else: # output must be sys.stdout (so it's already a file obj)
-        json.dump(obj,outfile)
+        json.dump(obj,outfile, indent=indentation)
 
 
 def load_json_from_disk(infile):
@@ -56,10 +56,10 @@ def load_json_from_disk(infile):
 
     if type(infile) == str:
         with open(infile, mode='r', encoding='UTF-8') as f:
-            obj = json.loads(f)
+            obj = json.load(f)
 
     else: # infile must be a file obj
-        obj = json.loads(infile)
+        obj = json.load(infile)
     
     return obj
 

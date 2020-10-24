@@ -2,11 +2,13 @@
 
 import argparse
 import sys
+import os
 from typing import Tuple, List, Dict
 import json
 from tqdm import tqdm
 import utils
 from utils import ensure_dir_exists
+
 
 def init_params():
     parser = argparse.ArgumentParser(description='Process command line arguments')
@@ -18,7 +20,7 @@ def init_params():
     return args
 
 
-def load_index(filename:str) -> Dict[str, Tuple[int, List[int]]]:
+def load_index(filename: str) -> Dict[str, Tuple[int, List[int]]]:
     '''Loads the inverted index stored in <filename>.'''
 
     print(f"Loading inverted index from {filename}")
@@ -39,46 +41,66 @@ def load_index(filename:str) -> Dict[str, Tuple[int, List[int]]]:
     return inverted_index
 
 
-def exec_query(word: str, index: Dict[str, Tuple[int, List[int]]]) -> Tuple[str, int, list, str]:
+def exec_query(query: str, index: Dict[str, Tuple[int, List[int]]]) -> Dict[str, dict]:
     # query_file = 'sampleQueries.json'
-    
+
     result = {}
 
-    result['query'] = word
-    if word in index:
+    if query in index:
 
-        query_hits: Tuple[int, List[int]] = index[word]
+        query_hits: Tuple[int, List[int]] = index[query]
         frequency: int = query_hits[0]
         postings_list: List[int] = query_hits[1]
 
         result['frequency'] = frequency
         result['postings'] = postings_list
-        result['message'] =  'successful'
-    
+        result['message'] = 'successful'
+
     else:
-       
+
         result['frequency'] = 0
         result['postings'] = []
-        result['message'] =  'unsuccessful'
+        result['message'] = 'unsuccessful'
 
-    return result
+    return {
+        query: {'frequency': result['frequency'],
+                'postings': result['postings'],
+                'message': result['message']}
+    }
+
+
+def ensure_query_file(qfile: str):
+    '''
+    Ensure that the file exists otherwise creates it. This file will contain an
+    aggregation of all the queries executed against the inverted index.
+    '''
+    if os.path.isfile(qfile):
+        return
+
+    with open(qfile, mode='w') as f:
+        f.write("{}")  # because we want utils.load_json_from_disk to load an empty dict instead of raising an exception
 
 
 if __name__ == '__main__':
-    
-    utils.ensure_dir_exists('output')
-    
+
     args = init_params()
+    utils.ensure_dir_exists('output')
+    ensure_query_file(args.output_file)
 
     if args.query_string == None or type(args.query_string) != str:
         print("Please provide a query str with flag -q")
         exit()
 
     inv_index: Dict[str, Tuple[int, List[int]]] = load_index(args.input_file)
-    
-    result: dict = exec_query(args.query_string, inv_index)
 
-    print(f'<{result["query"]}> query was {result["message"]}: {result["frequency"]} hits found')
-    
-    utils.write_json_obj_2_disk(result, args.output_file)
-    
+    result: dict = exec_query(args.query_string, inv_index)
+    x = result[args.query_string]
+    print(f'<{args.query_string}> query was {x["message"]}: {x["frequency"]} hits found')
+
+    queries: dict = utils.load_json_from_disk(args.output_file)
+
+    del x['message']
+
+    queries.update(result)
+
+    utils.write_json_obj_2_disk(queries, args.output_file, indentation=4)
