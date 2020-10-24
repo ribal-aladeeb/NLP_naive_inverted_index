@@ -14,7 +14,7 @@ from tqdm import tqdm
 def init_params():
     parser = argparse.ArgumentParser(description='Process command line arguments')
     parser.add_argument('-i', '--input_file', default='data', help='Input file')
-    parser.add_argument('-o', '--output_file', default=sys.stdout, help='Output file')  # Does not include any directory names, strictly the filenames
+    parser.add_argument('-o', '--output_file', default='output/inverted_index.txt', help='Output file')  # Does not include any directory names, strictly the filenames
     args = parser.parse_args()
 
     return args
