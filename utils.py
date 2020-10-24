@@ -62,4 +62,14 @@ def load_json_from_disk(infile):
         obj = json.loads(infile)
     
     return obj
+
+def ensure_dir_exists(dir):
+    '''Checks that <path> exists, otherwise creates it'''
+    
+    if os.path.isdir(dir):
+        return
+    
+    print(f'Creating {dir}/ directory')
+    os.mkdir(dir)
+
     

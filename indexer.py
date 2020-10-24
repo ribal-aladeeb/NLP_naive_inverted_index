@@ -190,7 +190,8 @@ def save_index_to_disk(inverted_index: Dict[str, Tuple[int, set]], outfile=None)
 
 def run_one_shot():
     '''Runs the creation of the index and stores it to disk.'''
-
+    utils.ensure_dir_exists('output')
+    utils.ensure_dir_exists('data')
     inverted_index: Dict[str, Tuple[int, set]] = from_scratch_index_creation()
     save_index_to_disk(inverted_index)
 

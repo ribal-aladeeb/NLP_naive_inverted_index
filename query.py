@@ -6,6 +6,7 @@ from typing import Tuple, List, Dict
 import json
 from tqdm import tqdm
 import utils
+from utils import ensure_dir_exists
 
 def init_params():
     parser = argparse.ArgumentParser(description='Process command line arguments')
@@ -64,6 +65,9 @@ def exec_query(word: str, index: Dict[str, Tuple[int, List[int]]]) -> Tuple[str,
 
 
 if __name__ == '__main__':
+    
+    utils.ensure_dir_exists('output')
+    
     args = init_params()
 
     if args.query_string == None or type(args.query_string) != str:
