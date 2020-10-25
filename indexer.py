@@ -126,7 +126,9 @@ def generate_term_docID_pairs(docs: List[str]) -> Tuple[str, int]:
     pairs = []
     # tokenizer = nltk.RegexpTokenizer(r"\b(\w[-']\w)\b+|\b\w[']\b|\b\w\b")
     # tokenizer = nltk.RegexpTokenizer(r"(?:\w|['-]\w|\w['])+")
+    # tokenizer = nltk.RegexpTokenizer(r"'?[a-zA-Z]+([-'][a-zA-Z]+['])*'?")
     tokenizer = nltk.RegexpTokenizer(r"[a-zA-Z]+[-']{0,1}[a-zA-Z]*[']{0,1}")
+    
 
     for id in tqdm(range(len(docs))):
         tokenized = tokenizer.tokenize(docs[id])
@@ -199,7 +201,7 @@ def run_one_shot():
     utils.ensure_dir_exists('output')
     utils.ensure_dir_exists('data')
     inverted_index: Dict[str, Tuple[int, set]] = from_scratch_index_creation()
-    save_index_to_disk(inverted_index)
+    save_index_to_disk(inverted_index, outfile=init_params().output_file)
 
 # def run_intermediate_steps():
 #     utils.ensure_dir_exists('output')
