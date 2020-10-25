@@ -117,9 +117,20 @@ def update_table(table: dict, oldname: str, newname: str, newindex: dict) -> dic
     return table
 
 
-def display_table(table: dict) -> None:
-    for index in table:
-        pass
+def display_table(table: dict) -> str:
+    '''Returns a properly formatted string of the compression table'''
+    
+    display = '\noperations\t\t\ttokens\t\t\t\t\tpostings\n'
+    display += '\t\t\tnumber\t∆%\tT%'*2 + '\n\n'
+
+    for index_type in table:
+        display += index_type+'\t'
+        for i in ['tokens', 'non-positional postings']:
+            x = table[index_type][i]
+            display += f"\t{x['number']}\t{x['delta %']}\t{x['total %']}\t\t"
+        display += '\n'
+
+    return display
 
 
 def run():
@@ -128,44 +139,40 @@ def run():
     print(f'\nCompression performed on {args.input_file} and stored in {args.output_file}')
 
     unfiltered: dict = utils.load_index(args.input_file)
-    print(f'index length = {len(unfiltered)}')
 
     table = {
         'unfiltered': {
             'tokens': {
                 'number': len(unfiltered),
-                'delta %': 0,
-                'total %': 0
+                'delta %': round(0.0, 2),
+                'total %': round(0.0, 2)
             },
             'non-positional postings': {
                 'number': sum([unfiltered[token][0] for token in unfiltered]),
-                'delta %': 0,
-                'total %': 0
+                'delta %': round(0.0, 2),
+                'total %': round(0.0, 2)
             }
         }
     }
 
     no_numbers: dict = remove_numbers(unfiltered.copy())
-    print(f'index length = {len(no_numbers)}')
     table = update_table(table, 'unfiltered', 'no numbers', no_numbers)
 
     case_folding: dict = case_fold(no_numbers)
-    print(f'index length = {len(case_folding)}')
     table = update_table(table, 'no numbers', 'case folding', case_folding)
 
     remove30 = remove_stop_words(case_folding, stop_words[:30])
-    print(f'index length = {len(remove30)}')
     table = update_table(table, 'case folding', '30 stop words', remove30)
 
     remove150 = remove_stop_words(case_folding, stop_words)
-    print(f'index length = {len(remove150)}')
     table = update_table(table, '30 stop words', '150 stop words', remove150)
 
     final = remove150
 
     utils.save_index_to_disk(final, args.output_file)
 
-    print(f'\nCompression Table:\n{json.dumps(table,indent=3)}')
+    print(f'\nCompression Table:')
+    print(display_table(table))
 
 
 if __name__ == '__main__':
