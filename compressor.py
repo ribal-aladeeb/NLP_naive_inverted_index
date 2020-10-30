@@ -120,7 +120,7 @@ def update_table(table: dict, oldname: str, newname: str, newindex: dict) -> dic
 def display_table(table: dict) -> str:
     '''Returns a properly formatted string of the compression table'''
     
-    display = '\noperations\t\t\ttokens\t\t\t\t\tpostings\n'
+    display = '\noperations\t\t\tterms\t\t\t\t\tpostings\n'
     display += '\t\t\tnumber\t∆%\tT%'*2 + '\n\n'
 
     for index_type in table:

@@ -4,4 +4,9 @@ __pycache__
 
 # this dir containes all text outputs
 output
-!output/keep
+!output/keep 
+
+report/
+!report/report.tex
+
+submission/
